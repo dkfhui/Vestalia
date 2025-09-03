@@ -1,0 +1,6 @@
+ktor:
+    application:
+        modules:
+            - com.dkfhui.ApplicationKt.module
+    deployment:
+        port: 9090
