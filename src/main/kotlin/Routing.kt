@@ -6,6 +6,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.receive
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -30,12 +31,33 @@ fun Application.configureRouting() {
         }
 
         route("/tasks") {
-            get() {
-                val tasks = TaskRepository.allTasks()
-                call.respondText(
-                    contentType = ContentType.parse("text/html"),
-                    text = tasks.tasksAsTable()
+            get {
+                call.respond(
+                    TaskRepository.allTasks()
                 )
+            }
+
+            get("/byName/{name?}") {
+                val name = call.parameters["name"]
+
+                if(name == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@get
+                }
+
+                try {
+                    val task = TaskRepository.taskByName(name)
+
+                    if(task == null) {
+                        call.respond(HttpStatusCode.NotFound)
+                        return@get
+                    }
+
+                    call.respond(task)
+                }
+                catch (ex: java.lang.IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
             }
 
             get("/byPriority/{priority?}") {
@@ -55,10 +77,7 @@ fun Application.configureRouting() {
                         return@get
                     }
 
-                    call.respondText(
-                        contentType = ContentType.parse("text/html"),
-                        text = tasks.tasksAsTable()
-                    )
+                    call.respond(tasks)
                 }
                 catch (ex: java.lang.IllegalArgumentException) {
                     call.respond(HttpStatusCode.BadRequest)
@@ -66,31 +85,12 @@ fun Application.configureRouting() {
             }
 
             post {
-                val formContent = call.receiveParameters()
-
-                val params = Triple(
-                    formContent["name"] ?: "",
-                    formContent["description"] ?: "",
-                    formContent["priority"] ?: ""
-                )
-
-                if(params.toList().any {it.isBlank()}) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@post
-                }
-
                 try {
-                    val priority = Priority.valueOf(params.third)
+                    val task = call.receive<Task>()
 
-                    TaskRepository.addTask(
-                        Task(
-                            name = params.first,
-                            description = params.second,
-                            priority = priority
-                        )
-                    )
+                    TaskRepository.addTask(task)
 
-                    call.respond(HttpStatusCode.NoContent)
+                    call.respond(HttpStatusCode.Created)
                 }
                 catch (ex: java.lang.IllegalArgumentException) {
                     call.respond(HttpStatusCode.BadRequest)
@@ -101,6 +101,24 @@ fun Application.configureRouting() {
                         status = HttpStatusCode.BadRequest
                     )
                 }
+            }
+
+            delete("/{name?}") {
+                val name = call.parameters["name"]
+
+                if(name == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@delete
+                }
+
+                val removed = TaskRepository.removeTask(name)
+
+                if(!removed) {
+                    call.respond(HttpStatusCode.NotFound)
+                    return@delete
+                }
+
+                call.respond(HttpStatusCode.NoContent)
             }
         }
 

@@ -1,7 +1,7 @@
 package com.dkfhui.model
 
 object TaskRepository {
-    val tasks = mutableListOf(
+    private val tasks = mutableListOf(
         Task("cleaning", "Clean the house", Priority.Low),
         Task("gardening", "Mow the lawn", Priority.Medium),
         Task("shopping", "Buy the groceries", Priority.High),
@@ -14,15 +14,19 @@ object TaskRepository {
         it.priority == priority
     }
 
-    fun taskByName(name: String) = tasks.filter {
+    fun taskByName(name: String) = tasks.find {
         it.name.equals(name, ignoreCase = true)
     }
 
     fun addTask(task: Task) {
-        if(taskByName(task.name).isNotEmpty()) {
+        if(taskByName(task.name) != null) {
             throw IllegalStateException("Cannot duplicate task name!")
         }
 
         tasks.add(task)
+    }
+
+    fun removeTask(name: String): Boolean {
+        return tasks.removeIf {it.name == name}
     }
 }
