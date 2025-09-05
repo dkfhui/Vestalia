@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.ktor)
-    kotlin("jvm") version "2.2.0"
+    alias(libs.plugins.kotlin.jvm)
     kotlin("plugin.serialization") version "2.2.0"
+
 }
 
 group = "com.dkfhui"
@@ -21,6 +22,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
+    implementation(libs.ktor.server.websockets)
     testImplementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
